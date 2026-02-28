@@ -45,6 +45,22 @@ export default function OrdersPage() {
     fetchOrders();
   }, []);
 
+  // Production polling: refetch orders periodically (no WebSocket on Vercel)
+  useEffect(() => {
+    if (!import.meta.env.PROD) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await orderApi.getAll();
+        setOrders(res.data);
+      } catch {
+        // ignore — next poll will retry
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-20">

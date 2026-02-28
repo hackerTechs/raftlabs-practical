@@ -48,6 +48,35 @@ export default function AdminPage() {
     fetchOrders();
   }, []);
 
+  // Production polling: refetch orders periodically (no WebSocket on Vercel)
+  useEffect(() => {
+    if (!import.meta.env.PROD) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await adminApi.getAllOrders();
+        setOrders((prev) => {
+          // Detect new orders that weren't in the previous list
+          const prevIds = new Set(prev.map((o) => o.id));
+          const incoming = res.data;
+          for (const order of incoming) {
+            if (!prevIds.has(order.id)) {
+              toast.success(
+                `New order from ${order.customer?.name || order.userEmail}`,
+                { icon: '🔔', duration: 4000 }
+              );
+            }
+          }
+          return incoming;
+        });
+      } catch {
+        // ignore — next poll will retry
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const handleOrderStatusUpdate = (updatedOrder) => {
     setOrders((prev) =>
       prev.map((o) => (o.id === updatedOrder.id ? updatedOrder : o))
