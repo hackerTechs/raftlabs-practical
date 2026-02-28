@@ -37,7 +37,6 @@ const createApp = (getIo = () => null) => {
   app.use(notFoundHandler);
   app.use(errorHandler);
 
-  console.log('App created: ', process.env);
   return app;
 };
 
